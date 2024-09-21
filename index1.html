@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSV to ICS Converter</title>
+    <style>
+        /* Reset basic styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Arial', sans-serif;
+        }
+
+        /* Dark space gray background */
+        body {
+            background-color: #2a2a2a; /* Space gray */
+            display: flex;
+            justify-content: center; /* Center the container */
+            align-items: center; /* Center vertically */
+            height: 100vh; /* Full height */
+            padding: 10px; /* Padding around the body */
+        }
+
+        /* Container */
+        .container {
+            text-align: center; /* Center text */
+            background-color: #2a2a2a; /* Same background color */
+            padding: 20px; /* Padding inside the container */
+            border-radius: 8px; /* Rounded corners */
+        }
+
+        /* Upload button styles */
+        .upload-btn {
+            background-color: #007bff; /* Default blue */
+            color: white;
+            padding: 10px 20px; /* Button padding */
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: background-color 0.3s ease;
+            margin-top: 10px; /* Space above the button */
+        }
+
+        /* Hover and active states */
+        .upload-btn:hover {
+            background-color: #28a745; /* Hover green */
+        }
+
+        .upload-btn:active {
+            background-color: #dc3545; /* Click red */
+        }
+
+        /* Description below the button */
+        .description {
+            font-size: 12px;
+            color: #f1f1f1; /* White description */
+            margin-bottom: 10px; /* Space below the text */
+        }
+
+        /* Hide file input */
+        .file-input {
+            display: none; /* Keep the file input hidden */
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <p class="description">Upload your CSV file to convert to ICS format.</p>
+        <input type="file" id="csvFileInput" class="file-input" accept=".csv">
+        <button id="uploadButton" class="upload-btn">Upload CSV</button>
+    </div>
+    <script>
+        document.getElementById('uploadButton').addEventListener('click', () => {
+            // Trigger the hidden file input
+            document.getElementById('csvFileInput').click();
+        });
+
+        document.getElementById('csvFileInput').addEventListener('change', handleFileSelect);
+
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const csvText = e.target.result;
+                    const events = csvToArray(csvText);
+                    const icsContent = generateICS(events);
+                    createDownloadLink(icsContent);
+                };
+                reader.readAsText(file);
+                
+                // Change button color to red after file selection
+                document.getElementById('uploadButton').style.backgroundColor = '#dc3545'; // Red
+                alert('CSV file uploaded!');
+            }
+        }
+
+        function csvToArray(csvText) {
+            const lines = csvText.trim().split("\n");
+            const events = lines.map(line => {
+                const [eventName, date] = line.split(",");
+                return { eventName: eventName.trim(), date: parseDate(date.trim()) };
+            });
+            return events;
+        }
+
+        function parseDate(dateStr) {
+            const [day, month, year] = dateStr.split("/").map(Number);
+            return new Date(year, month - 1, day); // Month is zero-based in JavaScript's Date object
+        }
+
+        function generateICS(events) {
+            const icsLines = [
+                "BEGIN:VCALENDAR",
+                "VERSION:2.0",
+                "CALSCALE:GREGORIAN",
+                "PRODID:-//Your App//EN"
+            ];
+
+            events.forEach(event => {
+                const startDate = formatDate(event.date);
+                const endDate = formatDate(new Date(event.date.getTime() + 60 * 60 * 1000)); // Add 1 hour to event end time
+                icsLines.push(
+                    "BEGIN:VEVENT",
+                    `SUMMARY:${event.eventName}`,
+                    `DTSTART:${startDate}`,
+                    `DTEND:${endDate}`,
+                    "END:VEVENT"
+                );
+            });
+
+            icsLines.push("END:VCALENDAR");
+            return icsLines.join("\r\n");
+        }
+
+        function formatDate(date) {
+            const year = date.getUTCFullYear();
+            const month = (date.getUTCMonth() + 1).toString().padStart(2, '0'); // Month is 0-based, so add 1
+            const day = date.getUTCDate().toString().padStart(2, '0');
+            const hours = date.getUTCHours().toString().padStart(2, '0');
+            const minutes = date.getUTCMinutes().toString().padStart(2, '0');
+            const seconds = date.getUTCSeconds().toString().padStart(2, '0');
+            return `${year}${month}${day}T${hours}${minutes}${seconds}Z`;
+        }
+
+        function createDownloadLink(icsContent) {
+            const blob = new Blob([icsContent], { type: "text/calendar" });
+            const url = URL.createObjectURL(blob);
+
+            // Create a hidden anchor element
+            const downloadLink = document.createElement("a");
+            downloadLink.href = url;
+            downloadLink.download = "events.ics";
+
+            // Programmatically click the link to trigger download
+            document.body.appendChild(downloadLink); // Append link to the body
+            downloadLink.click(); // Trigger click to download the file
+            document.body.removeChild(downloadLink); // Remove the link after download
+
+            // Optionally, revoke the object URL after some delay
+            setTimeout(() => URL.revokeObjectURL(url), 100);
+        }
+    </script>
+</body>
+</html>
