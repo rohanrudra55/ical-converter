@@ -1,1 +1,1 @@
-## COnvert your holidy excel list to iCal events
+## Convert your holidy list to iCal events
