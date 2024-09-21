@@ -12,6 +12,10 @@
             box-sizing: border-box;
             font-family: 'Arial', sans-serif;
         }
+        
+        img {
+                margin: 100px; /* Adds space around the image */
+            }
 
         /* Dark space gray background */
         body {
@@ -68,7 +72,7 @@
 </head>
 <body>
     <div class="container">
-        <img src="icons/icon.png" alt="Description of the image">
+        <img src="icons/icon.png" alt="Description of the image" width="80">
         <p class="description">Upload your Holiday CSV file with columns Event Name and Date (DD/MM/YYYY) format to convert to ICS format.</p>
         <input type="file" id="csvFileInput" class="file-input" accept=".csv">
         <button id="uploadButton" class="upload-btn">Upload CSV</button>
